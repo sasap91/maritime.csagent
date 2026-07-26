@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Counter — every shop gets its own agent</title>
+<title>Counter. Your shop's agent behind the counter</title>
 <style>
   :root { --bg:#faf6ef; --card:#fff; --ink:#26211a; --dim:#8a7f70; --hot:#c8401d; --ok:#2e7d4f; --line:#e8dfd2; }
   * { box-sizing:border-box; margin:0; }
@@ -12,65 +12,186 @@
   .wrap { width:100%; max-width:600px; }
   h1 { font-size:36px; letter-spacing:-.5px; }
   h1 .dot { color:var(--hot); }
-  .tag { color:var(--dim); margin:6px 0 24px; }
+  .tag { color:var(--dim); margin:6px 0 24px; max-width:36em; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:0 2px 14px rgba(60,40,10,.05); }
   label { display:block; font-size:12.5px; color:var(--dim); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.09em; }
+  label:first-child, .url-block > label { margin-top:0; }
+  .note { font-size:13px; color:var(--dim); margin:0 0 10px; line-height:1.45; }
   input, textarea { width:100%; background:#fdfbf7; color:var(--ink); border:1px solid var(--line); border-radius:9px; padding:11px 13px; font:inherit; }
-  textarea { min-height:88px; resize:vertical; }
+  textarea { min-height:110px; resize:vertical; line-height:1.45; }
+  textarea.tall { min-height:150px; }
   input:focus, textarea:focus { outline:none; border-color:var(--hot); }
-  button { margin-top:20px; width:100%; background:var(--hot); color:#fff; border:0; border-radius:10px; padding:14px; font:600 17px/1 inherit; cursor:pointer; }
-  button:hover { filter:brightness(1.06); }
+  .url-row { display:flex; gap:8px; }
+  .url-row input { flex:1; }
+  button { font:inherit; cursor:pointer; }
+  button:disabled { opacity:.65; cursor:wait; }
+  .btn-primary { width:100%; background:var(--hot); color:#fff; border:0; border-radius:10px; padding:14px; font-weight:600; font-size:17px; }
+  .btn-primary:hover { filter:brightness(1.06); }
+  .btn-secondary { width:100%; margin-top:12px; background:transparent; color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:12px; font-size:15px; }
+  .btn-secondary:hover { background:#f5efe6; }
+  .btn-secondary[aria-expanded="true"] { background:#f5efe6; }
+  .manual { display:none; margin-top:8px; padding-top:4px; border-top:1px solid var(--line); }
+  .manual.open { display:block; }
   .err { color:#b3261e; margin-top:12px; font-size:14px; min-height:1em; }
-  .done { text-align:center; padding:10px 0; }
-  .done h2 { font-size:24px; margin-bottom:10px; color:var(--ok); }
-  .done a.big { display:block; margin:16px 0; padding:14px; border-radius:10px; background:var(--hot); color:#fff; text-decoration:none; font-weight:600; }
-  .hint { font-size:13px; color:var(--dim); margin-top:14px; text-align:center; }
+  .ok { color:var(--ok); margin-top:12px; font-size:14px; min-height:1em; }
+  .ok a { color:var(--ok); }
+  .hint { font-size:13px; color:var(--dim); margin-top:14px; text-align:center; max-width:36em; margin-left:auto; margin-right:auto; }
   .hint a { color:inherit; }
+  .spin-wrap { margin-top:20px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Counter<span class="dot">.</span></h1>
-  <div class="tag">Every mom &amp; pop shop gets its own agent behind the counter — spun up on Maritime in one form. Pizza shop first; any shop next.</div>
+  <div class="tag">Customers ask about prices, hours, and delivery. Your agent answers from your real menu.</div>
   <div class="card" id="card">
     <form id="f">
-      <label>Shop name</label>
-      <input id="name" placeholder="Tony's Pizza" required>
-      <label>Hours</label>
-      <input id="hours" placeholder="Mon–Sat 11am–10pm, Sun 12–9" required>
-      <label>Menu (paste it — items + prices)</label>
-      <textarea id="menu" placeholder="Cheese slice $3.50&#10;Large pepperoni $22&#10;Calzone $12 ..." required></textarea>
-      <label>Policies / FAQ (delivery? cash only? gluten-free?)</label>
-      <textarea id="policies" placeholder="Delivery within 2 miles via phone orders. Cash and card. GF crust +$4."></textarea>
-      <label>Address / phone</label>
-      <input id="contact" placeholder="292 Main St, Cambridge · (617) 555-0123">
-      <button type="submit" id="go">Spin up my shop's agent →</button>
+      <div class="url-block">
+        <label for="url">Menu link</label>
+        <div class="url-row">
+          <input id="url" type="url" placeholder="https://slicelife.com/restaurants/…" autocomplete="off">
+        </div>
+        <button type="button" class="btn-primary" id="pull" style="margin-top:12px">Pull from link</button>
+      </div>
+
+      <button type="button" class="btn-secondary" id="toggleManual" aria-expanded="false" aria-controls="manual">
+        Enter manually
+      </button>
+
+      <div class="manual" id="manual" hidden>
+        <label for="name">Shop name</label>
+        <input id="name" placeholder="Tony's Pizza" maxlength="80">
+
+        <label for="hours">Hours</label>
+        <input id="hours" placeholder="Mon-Sat 11am-10pm, Sun 12-9" maxlength="200">
+
+        <label for="menu">Menu <span style="text-transform:none;letter-spacing:0">(items and prices)</span></label>
+        <textarea id="menu" class="tall" placeholder="Cheese slice $3.50&#10;Large pepperoni $22&#10;Calzone $12"></textarea>
+
+        <label for="policies">Policies / FAQ <span style="text-transform:none;letter-spacing:0">(delivery, payment, allergens)</span></label>
+        <textarea id="policies" placeholder="Delivery within 2 miles on phone orders. Cash and card. GF crust +$4."></textarea>
+
+        <label for="contact">Address / phone</label>
+        <input id="contact" placeholder="292 Main St, Cambridge · (617) 555-0123" maxlength="200">
+
+        <div class="spin-wrap">
+          <button type="submit" class="btn-primary" id="go">Open my counter</button>
+        </div>
+      </div>
+
       <div class="err" id="err"></div>
+      <div class="ok" id="status"></div>
     </form>
   </div>
-  <div class="hint">each shop = its own persistent Maritime agent · <a href="index.html">live shop directory</a></div>
+  <div class="hint"><a href="index.html">Browse shops that are live</a></div>
 </div>
 <script>
 const qs = new URLSearchParams(location.search);
 localStorage.removeItem('counter_api');
-const DEFAULT_API = 'https://api.maritime.sh/a/69e578d9-7e05-4d65-bb11-91b39df74a9e'; // Maritime-hosted backend — stable layer is THIS page, not the URL
+const DEFAULT_API = 'https://api.maritime.sh/a/69e578d9-7e05-4d65-bb11-91b39df74a9e'; // never hardcode elsewhere — this page is the stable layer
 const API = (qs.get('api') || DEFAULT_API).replace(/\/$/, '');
-const f = document.getElementById('f'), err = document.getElementById('err'), card = document.getElementById('card');
-f.onsubmit = async (e) => {
-  e.preventDefault(); err.textContent = '';
-  const go = document.getElementById('go'); go.disabled = true; go.textContent = 'Spinning up your agent…';
-  const body = Object.fromEntries(['name','hours','menu','policies','contact'].map(id => [id, document.getElementById(id).value]));
+const f = document.getElementById('f');
+const err = document.getElementById('err');
+const status = document.getElementById('status');
+const pull = document.getElementById('pull');
+const manual = document.getElementById('manual');
+const toggle = document.getElementById('toggleManual');
+
+const set = (id, v) => { if (v != null && v !== '') document.getElementById(id).value = v; };
+
+function openManual() {
+  manual.hidden = false;
+  manual.classList.add('open');
+  toggle.setAttribute('aria-expanded', 'true');
+  toggle.textContent = 'Hide manual entry';
+  document.getElementById('name').required = true;
+  document.getElementById('hours').required = true;
+  document.getElementById('menu').required = true;
+}
+
+function closeManual() {
+  manual.hidden = true;
+  manual.classList.remove('open');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.textContent = 'Enter manually';
+  document.getElementById('name').required = false;
+  document.getElementById('hours').required = false;
+  document.getElementById('menu').required = false;
+}
+
+toggle.onclick = () => {
+  if (manual.classList.contains('open')) closeManual();
+  else openManual();
+};
+
+pull.onclick = async () => {
+  err.textContent = '';
+  status.textContent = '';
+  const url = document.getElementById('url').value.trim();
+  if (!url) { err.textContent = 'Paste a menu link first.'; return; }
+  pull.disabled = true;
+  pull.textContent = 'Reading…';
   try {
-    const r = await fetch(API + '/api/shops', { method:'POST', headers:{'content-type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) });
+    const r = await fetch(API + '/api/extract', {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ url }),
+    });
+    if (r.status === 404) { openManual(); throw new Error('Auto-extract ships with the next backend deploy — enter the menu manually below for now.'); }
     const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'failed');
-    card.innerHTML = `<div class="done">
-      <h2>${body.name} now has an agent on the counter 🍕</h2>
-      <p>It's memorizing your menu right now. Put this link (or its QR) on your door, menus, and receipts:</p>
-      <a class="big" href="s.html?shop=${d.slug}">Open ${body.name}'s chat → counter · ${d.slug}</a>
-      <p class="hint">Try asking it about hours, prices, or delivery.</p>
-    </div>`;
-  } catch (ex) { err.textContent = ex.message; go.disabled = false; go.textContent = "Spin up my shop's agent →"; }
+    if (!r.ok) throw new Error(d.error || 'Could not read that page');
+    console.log('[extract]', d);
+    set('name', d.name);
+    set('hours', d.hours);
+    set('menu', d.menu);
+    set('policies', d.policies);
+    set('contact', d.contact);
+    openManual();
+    status.textContent = 'Check the details below, then open your counter'
+      + (d.warnings?.length ? ` (${d.warnings.length} warning${d.warnings.length === 1 ? '' : 's'})` : '');
+  } catch (ex) {
+    err.textContent = ex.message;
+  } finally {
+    pull.disabled = false;
+    pull.textContent = 'Pull from link';
+  }
+};
+
+f.onsubmit = async (e) => {
+  e.preventDefault();
+  err.textContent = '';
+  status.textContent = '';
+  if (!manual.classList.contains('open')) {
+    err.textContent = 'Pull from a link or enter manually first.';
+    return;
+  }
+  const go = document.getElementById('go');
+  go.disabled = true;
+  go.textContent = 'Opening…';
+  try {
+    const body = {
+      name: document.getElementById('name').value.trim(),
+      hours: document.getElementById('hours').value.trim(),
+      menu: document.getElementById('menu').value.trim(),
+      policies: document.getElementById('policies').value.trim(),
+      contact: document.getElementById('contact').value.trim(),
+    };
+    const r = await fetch(API + '/api/shops', {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Could not create shop');
+    status.innerHTML = `You're live. <a href="s.html?shop=${d.slug}">Chat with your counter</a>`;
+    f.reset();
+    closeManual();
+  } catch (ex) {
+    err.textContent = ex.message;
+  } finally {
+    go.disabled = false;
+    go.textContent = 'Open my counter';
+  }
 };
 </script>
 </body>
