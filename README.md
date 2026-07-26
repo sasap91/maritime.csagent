@@ -16,7 +16,7 @@ Live PRD: [Google Doc](https://docs.google.com/document/d/1mv9iSciGaHw2XbTbfcQx8
 
 | | Name | Role | Owns today |
 |---|---|---|---|
-| [@wilsonwu-ai](https://github.com/wilsonwu-ai) | **Wilson Wu** | Launch lead / GTM · Hermes gateway / WhatsApp | Maritime plumbing, QR pairing + channel reliability, demo, restaurant domain, writeup |
+| [@wilsonwu-ai](https://github.com/wilsonwu-ai) | **Wilson Wu** — MS CompSci @ Georgia Tech, Duke MBA, CRO (B2B SaaS) | Launch lead / GTM · Hermes gateway / WhatsApp | Maritime plumbing, QR pairing + channel reliability, demo, restaurant domain, writeup |
 | — | **Brandon** | Idea owner / Mentor | — |
 | [@sasap91](https://github.com/sasap91) | **Sasa Phanitsombat** — AI Data & Eval, MIT MBA | Repo owner | Team repo, project ops |
 | [@Pizzawookiee](https://github.com/Pizzawookiee) | **David Lee** — AI engineer & filmmaker, BU CS | Agent quality | Briefing/grounding, shop-data sourcing, demo videos |
@@ -91,13 +91,25 @@ npm start                  # http://localhost:3300 — seeds both real shops on 
 
 Deploys: push to main, then create a fresh Maritime agent from the repo (`maritime create <name> --repo <this repo> --public --port 8080`) — remember, redeploys of an existing agent are destroyed by the registry bug; always create fresh, then re-point the frontend's baked API URL.
 
-## WhatsApp integration (the actual MVP — owners: Sasa & Wilson)
+## WhatsApp integration
 
 Validated so far: `hermes whatsapp` pairs a real WhatsApp number via QR code (no Business API, no Twilio). `hermes gateway` manages the messaging gateway (WhatsApp/Telegram/Discord); `hermes send` does outbound.
 
 **WIRED AND VERIFIED (2:15pm):** WhatsApp number paired via `hermes whatsapp` QR (separate bot number, allowed users `*` — anyone can text it). Routing is agent-relay: a scoped mode appended to Hermes's `~/.hermes/SOUL.md` makes the gateway agent relay every customer message verbatim to `POST /api/chat {slug: boston-kitchen-pizza}` and reply with exactly the returned text (fail-safe: "call (617) 482-0085" if the API is down). Verified headless end-to-end — the large-Hawaiian trap answer came back word-for-word through the full chain (Hermes → Counter → Maritime agent).
 
 Ops notes: **only the gateway is local** — it runs as a launchd background service on Wilson's laptop (the QR-paired WhatsApp session physically lives there; `hermes gateway restart` to bounce it). The relay targets the Maritime-hosted API and retries once before its fail-safe. Bridge runs in self-chat mode (only Wilson's own messages trigger it — strangers texting the number are untouched). Replies take ~20–40s (two model hops) and carry a minimal `🍕 ` prefix (load-bearing: the bridge recognizes its own replies by it). Roadmap: host the gateway on Maritime too — Hermes is a first-class Maritime template, so each shop can get its own hosted Hermes + WhatsApp number.
+
+## Onboarding pipeline — treating this like a real company
+
+We built onboarding the way a real GTM motion would work, because adding shop #3 (and #300) is the whole platform claim:
+
+1. **Prospecting:** [`slice_menu_scrape.py`](slice_menu_scrape.py) scrapes a complete menu — every size and price — from any pizzeria on **Slice** (slicelife.com, the POS provider thousands of independent pizzerias use), HTTP-only, no API key. The pattern generalizes to other menu sites, which is how both of today's shops were sourced from public data.
+2. **Self-serve:** the [onboarding form](https://wilsonwu-ai.github.io/counter-demo/onboard.html) — paste a menu link (auto-extract) or fill it manually → the shop's dedicated agent spawns and is briefed → its chat page is live at `/s/<slug>`.
+3. **Grounding sources:** shop data lives as versioned Markdown under `shop-data/<slug>/`, loaded at boot.
+
+## Roadmap — the Owner Brain
+
+Every question the agent can't answer is already written to the shop's persistent memory (the owner FAQ backlog). The next step is graduating that into a real knowledge graph per shop — the same second-brain architecture as gbrain/Obsidian-style systems: each unanswered question, menu correction, and customer trend becomes a linked, versioned page the owner can query ("what did customers ask for this month that we don't sell?"). The chatbot is the front door; the owner's compounding knowledge base is the moat.
 
 ## Demo plan (8pm) — see PRD §6
 
