@@ -63,12 +63,9 @@ npm start                  # http://localhost:3300 — seeds both real shops on 
 
 Validated so far: `hermes whatsapp` pairs a real WhatsApp number via QR code (no Business API, no Twilio). `hermes gateway` manages the messaging gateway (WhatsApp/Telegram/Discord); `hermes send` does outbound.
 
-To build (gateway owner validates which wiring Hermes supports — both are plausible from the CLI surface, neither is verified yet):
+**WIRED AND VERIFIED (2:15pm):** WhatsApp number paired via `hermes whatsapp` QR (separate bot number, allowed users `*` — anyone can text it). Routing is agent-relay: a scoped mode appended to Hermes's `~/.hermes/SOUL.md` makes the gateway agent relay every customer message verbatim to `POST /api/chat {slug: boston-kitchen-pizza}` and reply with exactly the returned text (fail-safe: "call (617) 482-0085" if the API is down). Verified headless end-to-end — the large-Hawaiian trap answer came back word-for-word through the full chain (Hermes → Counter → Maritime agent).
 
-1. **Webhook wiring:** Hermes gateway receives a WhatsApp message → `hermes webhook` posts it to this server (`POST /api/chat` with the shop's slug) → reply goes back out via `hermes send -t whatsapp:<chat_id>`.
-2. **Agent-tool wiring:** the Hermes agent itself handles the WhatsApp conversation and calls Counter's API (or `maritime message` directly) as a tool.
-
-MVP routing assumption (per PRD): one gateway, one shop — the paired number IS Boston Kitchen Pizza's number for the demo. Multi-shop routing is stretch.
+Ops notes: gateway + Counter + tunnel all run on Wilson's laptop (`hermes gateway run` must stay in a foreground terminal). WhatsApp replies take ~20–40s (two model hops). One gateway = one shop for the demo; multi-shop routing (route by keyword or per-shop numbers) is stretch. Replies carry a "⚕ Hermes Agent" prefix.
 
 ## Demo plan (8pm) — see PRD §6
 
