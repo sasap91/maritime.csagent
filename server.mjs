@@ -134,9 +134,34 @@ const page = async (res, file, vars = {}) => {
   res.end(html);
 };
 
+const MIME = {
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+  ".woff2": "font/woff2",
+};
+
+const staticAsset = async (res, pathname) => {
+  const name = pathname.replace(/^\/+/, "");
+  if (!name || name.includes("..") || name.includes("/")) return false;
+  const file = join(__dirname, "public", name);
+  if (!existsSync(file)) return false;
+  const ext = name.slice(name.lastIndexOf("."));
+  const type = MIME[ext];
+  if (!type) return false;
+  const body = await readFile(file);
+  res.writeHead(200, { "content-type": type, "cache-control": "no-cache" });
+  res.end(body);
+  return true;
+};
+
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, "http://x");
+
+    if (req.method === "GET" && (await staticAsset(res, url.pathname))) return;
 
     if (
       req.method === "GET" &&
