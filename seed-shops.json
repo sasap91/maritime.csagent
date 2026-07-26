@@ -2,7 +2,7 @@
   "kendall-house-of-pizza": {
     "slug": "kendall-house-of-pizza",
     "name": "Kendall House of Pizza",
-    "hours": "Mon-Fri 10:00 AM - 7:30 PM. Saturday and Sunday closed / not listed in the supplied webpage schedule.",
+    "hours": "OPEN Monday-Saturday 10:00 AM-7:30 PM. CLOSED Sundays per Google (the menu site claims open daily - suggest calling (617) 547-1790 to confirm Sunday hours). Saturday IS a normal open day.",
     "sources": {
       "menu": "shop-data/kendall-house-of-pizza/menu.md",
       "hours": "shop-data/kendall-house-of-pizza/hours.md"
