@@ -279,13 +279,16 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { reply });
     }
 
-    // Voice channel — Vapi calls this Server URL. Vapi posts a tool-call webhook
-    // (message.type "tool-calls") whenever the assistant invokes the `ask_counter`
-    // custom tool. We resolve every tool call against the SAME brain as /api/chat
-    // (askShopAgent) and return { results: [{ toolCallId, result }] }, which Vapi
-    // feeds back to the assistant to speak aloud. slug is pinned in the Server URL
-    // query (?slug=...) so the assistant never invents it. For any non-tool message
-    // (status updates, transcripts, end-of-call reports) we just ACK 200.
+    // Voice channel — Vapi calls this route as its Server URL. Vapi posts a
+    // tool-call webhook (message.type "tool-calls") whenever the assistant invokes
+    // the `ask_counter` custom tool. We resolve every tool call against the SAME
+    // brain as /api/chat (askShopAgent → maritime CLI, which runs in-process when
+    // this server is deployed on maritime.sh) and return
+    // { results: [{ toolCallId, result }] }, which Vapi feeds back to the
+    // assistant to speak aloud. Self-contained on the host: no localhost, no
+    // cloudflared, no separate brain. slug is pinned in the Server URL query
+    // (?slug=...) so the assistant never invents it. Non-tool messages
+    // (status updates, transcripts, end-of-call reports) are ACK'd 200.
     if (req.method === "POST" && url.pathname === "/api/voice/tool") {
       const slug = url.searchParams.get("slug") || "boston-kitchen-pizza";
       const body = await readBody(req);
