@@ -82,15 +82,21 @@ document.getElementById('f').onsubmit = async (e) => {
   bubble('me', text);
   history.push({ role: 'user', text });
   const t = document.createElement('div'); t.className = 'typing'; t.textContent = 'typing…'; log.appendChild(t); log.scrollTop = log.scrollHeight;
-  try {
+  const ask = async () => {
     const r = await fetch(API + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ slug: SLUG, message: text, history: history.slice(0, -1) }) });
     const d = await r.json();
-    t.remove();
     if (!r.ok) throw new Error(d.error || 'failed');
+    return d;
+  };
+  try {
+    let d;
+    try { d = await ask(); }
+    catch { t.textContent = 'waking the shop\u2019s agent\u2026'; await new Promise(r => setTimeout(r, 2500)); d = await ask(); }
+    t.remove();
     bubble('them', d.reply);
     history.push({ role: 'agent', text: d.reply });
-  } catch (ex) { t.remove(); bubble('them', '⚠️ ' + ex.message); }
+  } catch (ex) { t.remove(); bubble('them', '⚠️ ' + ex.message + ' — try once more, or call the shop.'); }
 };
 </script>
 </body>

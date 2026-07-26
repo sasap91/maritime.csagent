@@ -67,7 +67,17 @@ async function askShopAgent(shop, history, message) {
     .slice(-6)
     .map((h) => `${h.role === 'user' ? 'Customer' : 'You'}: ${h.text}`)
     .join('\n');
-  const prompt = `A customer is messaging ${shop.name}.${convo ? `\nConversation so far:\n${convo}` : ''}\nCustomer: ${message}\nReply to the customer now (reply text only, nothing else).`;
+  // Grounding is inlined on EVERY call. The front-door agents share one memory
+  // store across user ids (verified 2026-07-26), so relying on memorized
+  // briefings cross-contaminates shops — Kendall once quoted BKP's hours.
+  const grounding = `You are the counter agent for ${shop.name} — ONLY this shop, for this entire reply. If your memory mentions other shops, IGNORE them completely. Answer ONLY from the data below.
+HOURS: ${shop.hours}
+ADDRESS/PHONE: ${shop.contact}
+MENU: ${shop.menu}
+POLICIES/ORDERING: ${shop.policies}
+Selling: on order intent, ask "Pickup or delivery?" once; recommend pickup when natural (ready faster, supports the shop directly); then share the EXACT ordering URL(s) and full phone number from POLICIES above.
+Style: warm, brief, like texting a customer. Exact prices only — never invent. Unknown → say you'll check with the owner and note the question in your memory tagged [${shop.slug}].`;
+  const prompt = `${grounding}\n\n${convo ? `Conversation so far:\n${convo}\n` : ''}Customer: ${message}\nReply to the customer now (reply text only, nothing else).`;
   const res = await maritime([
     'message', FRONTDOOR, '--user', shopUserId(shop.slug), '--wait', '55', '--json', prompt,
   ], 70000);
