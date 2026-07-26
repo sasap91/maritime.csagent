@@ -3,34 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Counter — live shop directory</title>
+<title>Counter. Shops you can ask</title>
 <style>
   :root { --bg:#faf6ef; --card:#fff; --ink:#26211a; --dim:#8a7f70; --hot:#c8401d; --line:#e8dfd2; }
   * { box-sizing:border-box; margin:0; }
   body { background:var(--bg); color:var(--ink); font:17px/1.5 -apple-system, "SF Pro Text", Georgia, serif; padding:34px; }
   h1 { font-size:34px; } h1 span { color:var(--hot); }
-  .sub { color:var(--dim); margin:6px 0 24px; }
+  .sub { color:var(--dim); margin:6px 0 24px; max-width:40em; }
   .count { color:var(--hot); font-weight:700; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
   .shop { background:var(--card); border:1px solid var(--line); border-radius:13px; padding:18px; }
   .shop h2 { font-size:20px; margin-bottom:4px; }
   .shop .hrs { color:var(--dim); font-size:14px; margin-bottom:12px; }
   .shop a { display:inline-block; text-decoration:none; background:var(--hot); color:#fff; border-radius:8px; padding:8px 14px; font-size:14px; font-weight:600; }
-  footer { margin-top:30px; color:var(--dim); font-size:13.5px; }
+  footer { margin-top:30px; color:var(--dim); font-size:13.5px; max-width:40em; }
+  a { color:inherit; }
 </style>
 </head>
 <body>
-<h1>Counter<span>.</span> live shops</h1>
-<div class="sub"><span class="count" id="n">0</span> shops, each with its own dedicated Maritime agent — spun up by one form at <a href="/">/</a></div>
+<h1>Counter<span>.</span> shops</h1>
+<div class="sub">
+  <span class="count" id="n">0</span> counters open. Ask about the menu, hours, or delivery.
+  <a href="/">Add yours</a>
+</div>
 <div class="grid" id="grid"></div>
-<footer>one `maritime message --user shop_&lt;slug&gt;` call is the whole provisioning system — unknown shop id → new persistent agent</footer>
+<footer>Pick a shop and ask like you would at the counter.</footer>
 <script>
 async function tick() {
   try {
     const shops = await (await fetch('/api/shops')).json();
     document.getElementById('n').textContent = shops.length;
     document.getElementById('grid').innerHTML = shops.map(s =>
-      `<div class="shop"><h2>${s.name}</h2><div class="hrs">${s.hours}</div><a href="/s/${s.slug}">Open chat →</a></div>`).join('');
+      `<div class="shop"><h2>${s.name}</h2><div class="hrs">${s.hours}</div><a href="/s/${s.slug}">Ask this shop</a></div>`).join('');
   } catch {}
 }
 tick(); setInterval(tick, 5000);
