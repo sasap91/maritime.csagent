@@ -12,13 +12,17 @@
 
 Live PRD: [Google Doc](https://docs.google.com/document/d/1mv9iSciGaHw2XbTbfcQx8pRb0CLwKr7Y/edit) · Sundai × Maritime hack, MIT, 2026-07-26
 
-| Who | Role | Owns today |
-|---|---|---|
-| Wilson Wu | Launch lead / GTM | Maritime plumbing (validated), demo script, restaurant domain, writeup |
-| Brandon | Idea owner | — |
-| Sasa & Wilson | **Hermes gateway / WhatsApp** | QR pairing, message routing, channel reliability |
-| David & Kelvin | Agent quality | Briefing/grounding, unknown-question memory, tone, database |
-| Allan & Rohan | Frontend / onboarding | Onboard form + directory polish, QR codes for tables |
+## Team
+
+| | Name | Role | Owns today |
+|---|---|---|---|
+| [@wilsonwu-ai](https://github.com/wilsonwu-ai) | **Wilson Wu** | Launch lead / GTM · Hermes gateway / WhatsApp | Maritime plumbing, QR pairing + channel reliability, demo, restaurant domain, writeup |
+| — | **Brandon** | Idea owner / Mentor | — |
+| [@sasap91](https://github.com/sasap91) | **Sasa Phanitsombat** — AI Data & Eval, MIT MBA | Repo owner | Team repo, project ops |
+| [@Pizzawookiee](https://github.com/Pizzawookiee) | **David Lee** — AI engineer & filmmaker, BU CS | Agent quality | Briefing/grounding, shop-data sourcing, demo videos |
+| [@kchege](https://github.com/kchege) | **Kelvin Chege** — Product & AI @ Amazon, Harvard MBA | Agent quality | Grounding, unknown-question memory, tone, database |
+| [@allankipkorir](https://github.com/allankipkorir) | **Allan Korir** — MS/MBA, Harvard Business School | Frontend / onboarding | Onboard form, link-extract flow, directory |
+| [@lifafa03](https://github.com/lifafa03) | **Rohan Reddy Solipuram** — MS Fintech @ WPI, 4× hackathon wins | Frontend / onboarding | Onboarding polish, QR codes for tables |
 
 ## 🍕 ELI5 — what did we actually build?
 
