@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counter — every shop gets its own agent</title>
+<style>
+  :root { --bg:#faf6ef; --card:#fff; --ink:#26211a; --dim:#8a7f70; --hot:#c8401d; --ok:#2e7d4f; --line:#e8dfd2; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--ink); font:16px/1.55 -apple-system, "SF Pro Text", Georgia, serif;
+         min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .wrap { width:100%; max-width:600px; }
+  h1 { font-size:36px; letter-spacing:-.5px; }
+  h1 .dot { color:var(--hot); }
+  .tag { color:var(--dim); margin:6px 0 24px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:0 2px 14px rgba(60,40,10,.05); }
+  label { display:block; font-size:12.5px; color:var(--dim); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.09em; }
+  input, textarea { width:100%; background:#fdfbf7; color:var(--ink); border:1px solid var(--line); border-radius:9px; padding:11px 13px; font:inherit; }
+  textarea { min-height:88px; resize:vertical; }
+  input:focus, textarea:focus { outline:none; border-color:var(--hot); }
+  button { margin-top:20px; width:100%; background:var(--hot); color:#fff; border:0; border-radius:10px; padding:14px; font:600 17px/1 inherit; cursor:pointer; }
+  button:hover { filter:brightness(1.06); }
+  .err { color:#b3261e; margin-top:12px; font-size:14px; min-height:1em; }
+  .done { text-align:center; padding:10px 0; }
+  .done h2 { font-size:24px; margin-bottom:10px; color:var(--ok); }
+  .done a.big { display:block; margin:16px 0; padding:14px; border-radius:10px; background:var(--hot); color:#fff; text-decoration:none; font-weight:600; }
+  .hint { font-size:13px; color:var(--dim); margin-top:14px; text-align:center; }
+  .hint a { color:inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Counter<span class="dot">.</span></h1>
+  <div class="tag">Every mom &amp; pop shop gets its own agent behind the counter — spun up on Maritime in one form. Pizza shop first; any shop next.</div>
+  <div class="card" id="card">
+    <form id="f">
+      <label>Shop name</label>
+      <input id="name" placeholder="Tony's Pizza" required>
+      <label>Hours</label>
+      <input id="hours" placeholder="Mon–Sat 11am–10pm, Sun 12–9" required>
+      <label>Menu (paste it — items + prices)</label>
+      <textarea id="menu" placeholder="Cheese slice $3.50&#10;Large pepperoni $22&#10;Calzone $12 ..." required></textarea>
+      <label>Policies / FAQ (delivery? cash only? gluten-free?)</label>
+      <textarea id="policies" placeholder="Delivery within 2 miles via phone orders. Cash and card. GF crust +$4."></textarea>
+      <label>Address / phone</label>
+      <input id="contact" placeholder="292 Main St, Cambridge · (617) 555-0123">
+      <button type="submit" id="go">Spin up my shop's agent →</button>
+      <div class="err" id="err"></div>
+    </form>
+  </div>
+  <div class="hint">each shop = its own persistent Maritime agent · <a href="index.html">live shop directory</a></div>
+</div>
+<script>
+const qs = new URLSearchParams(location.search);
+localStorage.removeItem('counter_api');
+const DEFAULT_API = 'https://api.maritime.sh/a/69e578d9-7e05-4d65-bb11-91b39df74a9e'; // Maritime-hosted backend — stable layer is THIS page, not the URL
+const API = (qs.get('api') || DEFAULT_API).replace(/\/$/, '');
+const f = document.getElementById('f'), err = document.getElementById('err'), card = document.getElementById('card');
+f.onsubmit = async (e) => {
+  e.preventDefault(); err.textContent = '';
+  const go = document.getElementById('go'); go.disabled = true; go.textContent = 'Spinning up your agent…';
+  const body = Object.fromEntries(['name','hours','menu','policies','contact'].map(id => [id, document.getElementById(id).value]));
+  try {
+    const r = await fetch(API + '/api/shops', { method:'POST', headers:{'content-type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'failed');
+    card.innerHTML = `<div class="done">
+      <h2>${body.name} now has an agent on the counter 🍕</h2>
+      <p>It's memorizing your menu right now. Put this link (or its QR) on your door, menus, and receipts:</p>
+      <a class="big" href="s.html?shop=${d.slug}">Open ${body.name}'s chat → counter · ${d.slug}</a>
+      <p class="hint">Try asking it about hours, prices, or delivery.</p>
+    </div>`;
+  } catch (ex) { err.textContent = ex.message; go.disabled = false; go.textContent = "Spin up my shop's agent →"; }
+};
+</script>
+</body>
+</html>
