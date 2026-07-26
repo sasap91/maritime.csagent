@@ -2,6 +2,14 @@
 
 **Every mom & pop shop gets its own agent behind the counter.** Onboard a shop once (name, hours, menu, policies) → a dedicated persistent [Maritime](https://maritime.sh) agent is spawned for it → customers ask it anything and get grounded answers with exact prices.
 
+> ### 🎤 Try it right now
+> **💬 Chat with a real pizza shop:** https://wilsonwu-ai.github.io/counter-demo/
+> **🏪 Onboard your own shop (60s):** https://wilsonwu-ai.github.io/counter-demo/onboard.html
+> **▶️ 20-second demo:** [counter-demo-20s.mp4](demo/counter-demo-20s.mp4) · [WhatsApp demo](demo/boston-kitchen-pizza-demo_v2.mp4)
+> **⚙️ The whole app, hosted on Maritime:** https://api.maritime.sh/a/69e578d9-7e05-4d65-bb11-91b39df74a9e
+>
+> Two real Boston pizza shops are live. Ask Boston Kitchen Pizza for a **large Hawaiian** — it knows that size doesn't exist, and offers the two that do.
+
 Live PRD: [Google Doc](https://docs.google.com/document/d/1mv9iSciGaHw2XbTbfcQx8pRb0CLwKr7Y/edit) · Sundai × Maritime hack, MIT, 2026-07-26
 
 | Who | Role | Owns today |
@@ -30,9 +38,9 @@ The part that makes this a *platform* and not a chatbot: **every shop gets its O
 
 **How a message travels (the slightly-bigger-kid version):** your WhatsApp text → the **Hermes gateway** (the shop's phone line) → the **Counter API** hosted on Maritime (the switchboard) → the **shop's dedicated Maritime agent** (the brain, with the menu in its head) → back to your phone with the answer. Four hops, ~10–30 seconds, no human needed — and the shop owner never touched a line of code.
 
-## ⚠️ The web chat is a PROTOTYPE. The product is WhatsApp.
+## Two live channels, one brain per shop
 
-What's in this repo today is the working spine: onboarding → per-shop Maritime agent → grounded Q&A, demoed through a throwaway web chat UI. The MVP we present replaces that UI with **WhatsApp via the Hermes gateway** (see PRD §4). The plumbing to keep: `POST /api/chat {slug, message}` → shop's agent → reply. The WhatsApp integration calls that same endpoint (or the front door directly).
+**WhatsApp** (the product — wired and verified: QR-paired number via Hermes gateway, grounded replies with tap-to-order links) and **web chat** (the zero-install way for anyone to try it). Both hit the same `POST /api/chat {slug, message}` → the shop's own Maritime agent → reply.
 
 ## What already works (verified live)
 
