@@ -29,10 +29,26 @@ const SHOPS_F = join(DATA, "shops.json");
 const SEED_F = join(__dirname, "seed-shops.json");
 // First boot on a fresh clone: load the committed seed (real onboarded shops)
 // so teammates get Boston Kitchen Pizza + Kendall House of Pizza out of the box.
+function loadShops(file) {
+  const reg = JSON.parse(readFileSync(file, "utf8"));
+  for (const [slug, shop] of Object.entries(reg)) {
+    // Resolve shop-data/ source files (menu/hours) into inline fields.
+    for (const k of ["menu", "hours"]) {
+      const p = shop.sources?.[k];
+      if (p && !shop[k]?.trim?.() || (p && k === "menu" && !shop.menu)) {
+        try { shop[k === "hours" ? "hoursDetails" : k] = readFileSync(join(__dirname, p), "utf8").trim(); } catch {}
+      }
+    }
+    if (!shop.menu && shop.sources?.menu) {
+      try { shop.menu = readFileSync(join(__dirname, shop.sources.menu), "utf8").trim(); } catch {}
+    }
+  }
+  return reg;
+}
 let shops = existsSync(SHOPS_F)
-  ? JSON.parse(readFileSync(SHOPS_F, "utf8"))
+  ? loadShops(SHOPS_F)
   : existsSync(SEED_F)
-    ? JSON.parse(readFileSync(SEED_F, "utf8"))
+    ? loadShops(SEED_F)
     : {};
 const persist = () => writeFile(SHOPS_F, JSON.stringify(shops, null, 2));
 
@@ -86,7 +102,31 @@ async function askShopAgent(shop, history, message) {
     .slice(-6)
     .map((h) => `${h.role === "user" ? "Customer" : "You"}: ${h.text}`)
     .join("\n");
-  const prompt = `A customer is messaging ${shop.name}.${convo ? `\nConversation so far:\n${convo}` : ""}\nCustomer: ${message}\nReply to the customer now (reply text only, nothing else).`;
+  // Grounding travels inline on EVERY call — front-door agents share one
+  // memory store across user ids (verified: Kendall once quoted BKP's hours).
+  const grounding = `You are the counter agent for ${shop.name} — ONLY this shop, for this entire reply. If your memory mentions other shops, IGNORE them completely. Answer ONLY from the data below.
+HOURS: ${shop.hoursDetails || shop.hours}
+ADDRESS/PHONE: ${shop.contact}
+MENU: ${shop.menu}
+POLICIES/ORDERING: ${shop.policies}
+Selling: on order intent, ask "Pickup or delivery?" once; recommend pickup when natural (ready faster, supports the shop directly); then share only the 1-2 best ordering URL(s) and the full phone number from POLICIES above.
+Style: warm, brief, like texting a customer. Exact prices only — never invent. Unknown → say you'll check with the owner.`;
+  const prompt = `${grounding}\n\n${convo ? `Conversation so far:\n${convo}\n` : ""}Customer: ${message}\nReply to the customer now (reply text only, nothing else).`;
+  // COUNTER_DIRECT=1: direct Claude call with the same grounding — seconds
+  // instead of the multi-hop front-door round trip (WhatsApp relay path).
+  if (process.env.COUNTER_DIRECT === "1") {
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    globalThis.__anthropic ??= new Anthropic();
+    const r = await globalThis.__anthropic.messages.create({
+      model: "claude-opus-5",
+      max_tokens: 1024,
+      output_config: { effort: "medium" },
+      messages: [{ role: "user", content: prompt }],
+    });
+    const text = r.content.find((b) => b.type === "text")?.text?.trim();
+    if (!text) throw new Error("empty reply");
+    return text;
+  }
   const res = await maritime(
     [
       "message",
@@ -122,8 +162,13 @@ const readBody = (req) =>
       }
     });
   });
+const CORS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, POST, OPTIONS",
+  "access-control-allow-headers": "content-type",
+};
 const send = (res, code, obj) => {
-  res.writeHead(code, { "content-type": "application/json" });
+  res.writeHead(code, { "content-type": "application/json", ...CORS });
   res.end(JSON.stringify(obj));
 };
 const page = async (res, file, vars = {}) => {
@@ -160,6 +205,7 @@ const staticAsset = async (res, pathname) => {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, "http://x");
+    if (req.method === "OPTIONS") { res.writeHead(204, CORS); return res.end(); }
 
     if (req.method === "GET" && (await staticAsset(res, url.pathname))) return;
 
