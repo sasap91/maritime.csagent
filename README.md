@@ -25,6 +25,10 @@ Two real shops onboarded from their public menus, seeded in this repo:
 
 Grounding rule learned the hard way: an **unbriefed** agent invented an $18.99 price. Briefings must be confirmed by the agent, never fire-and-forget.
 
+Committed source material for seeded shops lives under `shop-data/<shop-slug>/`.
+A seed can set `sources.menu` and `sources.hours` to repository-relative files;
+the server loads those files as the agent's grounding information at startup.
+
 ## Architecture
 
 ```
