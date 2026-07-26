@@ -39,7 +39,7 @@
 <script>
 const qs = new URLSearchParams(location.search);
 if (qs.get('api')) localStorage.setItem('counter_api', qs.get('api').replace(/\/$/, ''));
-const DEFAULT_API = 'https://api.maritime.sh/a/3ad1d0df-3a98-40fe-b21b-9ea0990dbc67'; // Maritime-hosted backend — stable
+const DEFAULT_API = 'https://api.maritime.sh/a/afcabf07-130d-4133-8b92-1e43e82db3ee'; // Maritime-hosted backend — stable
 const API = (qs.get('api') || localStorage.getItem('counter_api') || DEFAULT_API).replace(/\/$/, '');
 const SLUG = qs.get('shop') || 'boston-kitchen-pizza';
 const log = document.getElementById('log');
