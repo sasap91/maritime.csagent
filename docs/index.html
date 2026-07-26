@@ -29,9 +29,9 @@
 <footer>frontend: GitHub Pages · backend: Counter API (Maritime per-shop agents) · repo: <a href="https://github.com/sasap91/maritime.csagent">maritime.csagent</a></footer>
 <script>
 const qs = new URLSearchParams(location.search);
-if (qs.get('api')) localStorage.setItem('counter_api', qs.get('api').replace(/\/$/, ''));
 const DEFAULT_API = 'https://api.maritime.sh/a/afcabf07-130d-4133-8b92-1e43e82db3ee'; // Maritime-hosted backend — stable
-const API = (qs.get('api') || localStorage.getItem('counter_api') || DEFAULT_API).replace(/\/$/, '');
+localStorage.removeItem('counter_api'); // purge stale tunnel URLs from earlier today
+const API = (qs.get('api') || DEFAULT_API).replace(/\/$/, '');
 async function tick() {
   if (!API) { document.getElementById('warn').style.display = 'block'; document.getElementById('n').textContent = '?'; return; }
   try {
