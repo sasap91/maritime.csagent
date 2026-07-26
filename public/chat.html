@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{NAME}} — ask us anything</title>
+<title>{{NAME}}. Ask the counter</title>
 <style>
   :root { --bg:#faf6ef; --ink:#26211a; --dim:#8a7f70; --hot:#c8401d; --line:#e8dfd2; --me:#c8401d; --them:#fff; }
   * { box-sizing:border-box; margin:0; }
@@ -28,35 +28,20 @@
 <body>
 <header>
   <h1>{{NAME}}<span>.</span></h1>
-  <div class="sub">{{HOURS}} · usually replies in ~15s</div>
+  <div class="sub">{{HOURS}}</div>
 </header>
 <div id="log"></div>
 <form id="f">
   <input id="q" placeholder="Do you have gluten-free crust?" autocomplete="off">
   <button>Send</button>
 </form>
-<div class="foot">served by {{NAME}}'s own agent · hosted on Maritime</div>
+<div class="foot">{{NAME}} · behind the counter</div>
 <script>
 const SLUG = '{{SLUG}}';
 const log = document.getElementById('log');
 const history = [];
-const LINK_RE = /(https?:\/\/[^\s)]+|\(\d{3}\)\s?\d{3}-\d{4}|\b\d{3}-\d{3}-\d{4}\b)/g;
-const bubble = (cls, text) => {
-  const d = document.createElement('div'); d.className = 'msg ' + cls;
-  String(text).split(LINK_RE).forEach((part) => {
-    if (!part) return;
-    if (/^https?:\/\//.test(part)) {
-      const a = document.createElement('a'); a.href = part; a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = part.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
-      d.appendChild(a);
-    } else if (/^[\d(]/.test(part) && /\d{3}-\d{4}$/.test(part)) {
-      const a = document.createElement('a'); a.href = 'tel:+1' + part.replace(/\D/g, '');
-      a.textContent = part; d.appendChild(a);
-    } else d.appendChild(document.createTextNode(part));
-  });
-  log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
-};
-bubble('them', "Hey! I'm the agent behind the counter at {{NAME}}. Ask me about the menu, hours, delivery — anything.");
+const bubble = (cls, text) => { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; };
+bubble('them', "Hey! What can I get for you? Menu, hours, delivery… ask away.");
 document.getElementById('f').onsubmit = async (e) => {
   e.preventDefault();
   const q = document.getElementById('q');
