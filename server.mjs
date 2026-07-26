@@ -21,12 +21,13 @@ try {
 const PORT = process.env.PORT || 3300;
 const FRONTDOOR = process.env.MARITIME_FRONTDOOR_AGENT || "mm-frontdoor2";
 const ADMIN = process.env.ADMIN_SECRET || "sundai";
-// Voice channel (ElevenLabs Conversational AI widget). The agent is a thin voice
-// shell that calls POST /api/voice/answer as a webhook tool; the real brain is
-// still askShopAgent(). AGENT_ID is templated into the shop chat page for the
-// widget embed; TOOL_SECRET (optional) gates the webhook tool with a header.
-const ELEVENLABS_AGENT_ID = process.env.ELEVENLABS_AGENT_ID || "";
-const ELEVENLABS_TOOL_SECRET = process.env.ELEVENLABS_TOOL_SECRET || "";
+// Voice channel (Vapi). The Vapi assistant is a thin voice shell: it greets the
+// caller and, on each turn, calls the `ask_counter` custom tool, which Vapi
+// delivers to POST /api/voice/tool as a tool-call webhook. That route wraps the
+// SAME brain as /api/chat (askShopAgent) — one source of truth. ASSISTANT_ID +
+// PUBLIC_KEY are templated into the shop chat page for the web widget embed.
+const VAPI_ASSISTANT_ID = process.env.VAPI_ASSISTANT_ID || "";
+const VAPI_PUBLIC_KEY = process.env.VAPI_PUBLIC_KEY || "";
 
 // ── Disk-backed shops registry ──────────────────────────────────────────────
 const DATA = join(__dirname, "data");
@@ -115,13 +116,13 @@ async function askShopAgent(shop, history, message) {
   return res.reply;
 }
 
-// ── Voice channel (ElevenLabs) ──────────────────────────────────────────────
+// ── Voice channel (Vapi) ────────────────────────────────────────────────────
 // The text brain pastes full ordering URLs + tel: links into replies — fine for
 // WhatsApp/web (tappable), awful spoken aloud. This converts a text reply into a
-// speakable one so the ElevenLabs agent reads something natural instead of a URL.
+// speakable one so the Vapi assistant reads something natural instead of a URL.
 const speakable = (reply) =>
   reply
-    // "(617) 555-0100" / "+16175550100" → "at six one seven, five five five, zero one zero zero"
+    // "(617) 555-0100" / "+16175550100" → "six one seven, five five five, zero one zero zero"
     .replace(/(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, (m) => {
       const digits = m.replace(/\D/g, "").replace(/^1/, "").split("").join(" ");
       return digits;
@@ -182,7 +183,8 @@ const server = http.createServer(async (req, res) => {
         SLUG: shop.slug,
         NAME: shop.name,
         HOURS: shop.hours,
-        AGENT_ID: ELEVENLABS_AGENT_ID,
+        ASSISTANT_ID: VAPI_ASSISTANT_ID,
+        VAPI_PUBLIC_KEY: VAPI_PUBLIC_KEY,
       });
     }
 
@@ -277,43 +279,54 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { reply });
     }
 
-    // Voice channel — ElevenLabs Conversational AI calls this as a webhook tool
-    // ("ask_counter") on every turn. It is a thin wrapper over the SAME brain as
-    // /api/chat: one source of truth. Returns { result } which the ElevenLabs
-    // agent speaks aloud. slug is pinned in the tool URL (?slug=...) so the agent
-    // never has to invent it. Optional shared-secret header if ELEVENLABS_TOOL_SECRET
-    // is set.
-    if (req.method === "POST" && url.pathname === "/api/voice/answer") {
+    // Voice channel — Vapi calls this Server URL. Vapi posts a tool-call webhook
+    // (message.type "tool-calls") whenever the assistant invokes the `ask_counter`
+    // custom tool. We resolve every tool call against the SAME brain as /api/chat
+    // (askShopAgent) and return { results: [{ toolCallId, result }] }, which Vapi
+    // feeds back to the assistant to speak aloud. slug is pinned in the Server URL
+    // query (?slug=...) so the assistant never invents it. For any non-tool message
+    // (status updates, transcripts, end-of-call reports) we just ACK 200.
+    if (req.method === "POST" && url.pathname === "/api/voice/tool") {
       const slug = url.searchParams.get("slug") || "boston-kitchen-pizza";
-      const shop = shops[slug];
-      if (!shop)
-        return send(res, 404, { result: "Sorry, I can't find that shop." });
-      if (
-        ELEVENLABS_TOOL_SECRET &&
-        req.headers["x-tool-secret"] !== ELEVENLABS_TOOL_SECRET
-      )
-        return send(res, 401, { result: "Unauthorized." });
       const body = await readBody(req);
-      // ElevenLabs posts { parameters: { message } }; also accept { message }
-      // so the route is testable with a plain curl.
-      const message = (body.parameters?.message || body.message || "")
-        .trim()
-        .slice(0, 1000);
-      if (!message)
-        return send(res, 400, { result: "I didn't catch that." });
-      try {
-        const reply = await askShopAgent(shop, null, message);
-        return send(res, 200, { result: speakable(reply) });
-      } catch (e) {
-        console.error("[voice] failed", slug, e.message);
-        return send(res, 200, {
-          result:
-            "Sorry, give us one sec — or call us at the shop number.",
-        });
+      const msg = body.message || {};
+      // Only tool-calls expect a payload back; everything else is a notification.
+      if (msg.type !== "tool-calls") return send(res, 200, { ok: true });
+      const shop = shops[slug];
+      const results = [];
+      for (const tc of msg.toolCallList || []) {
+        if (!shop) {
+          results.push({
+            toolCallId: tc.id,
+            result: "Sorry, I can't find that shop.",
+          });
+          continue;
+        }
+        const message = String(
+          tc.arguments?.message || tc.function?.parameters?.message || "",
+        )
+          .trim()
+          .slice(0, 1000);
+        if (!message) {
+          results.push({ toolCallId: tc.id, result: "I didn't catch that." });
+          continue;
+        }
+        try {
+          const reply = await askShopAgent(shop, null, message);
+          results.push({ toolCallId: tc.id, result: speakable(reply) });
+        } catch (e) {
+          console.error("[voice] failed", slug, e.message);
+          results.push({
+            toolCallId: tc.id,
+            result: "Sorry, give us one sec — try again in a moment.",
+          });
+        }
       }
+      return send(res, 200, { results });
     }
 
-    if (req.method === "POST" && url.pathname === "/api/reset") {      const { secret } = await readBody(req);
+    if (req.method === "POST" && url.pathname === "/api/reset") {
+      const { secret } = await readBody(req);
       if (secret !== ADMIN) return send(res, 403, { error: "bad secret" });
       shops = {};
       await persist();
