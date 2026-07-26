@@ -16,6 +16,7 @@
   .me { align-self:flex-end; background:var(--hot); color:#fff; border-bottom-right-radius:4px; }
   .them { align-self:flex-start; background:#fff; border:1px solid var(--line); border-bottom-left-radius:4px; }
   .typing { align-self:flex-start; color:var(--dim); font-size:14px; padding:4px 8px; }
+  .msg a { color:inherit; text-decoration:underline; font-weight:600; }
   form { display:flex; gap:10px; padding:12px 14px; background:#fff; border-top:1px solid var(--line); }
   input { flex:1; border:1px solid var(--line); border-radius:999px; padding:12px 16px; font:inherit; background:#fdfbf7; }
   input:focus { outline:none; border-color:var(--hot); }
@@ -43,7 +44,22 @@ const API = (qs.get('api') || localStorage.getItem('counter_api') || DEFAULT_API
 const SLUG = qs.get('shop') || 'boston-kitchen-pizza';
 const log = document.getElementById('log');
 const history = [];
-const bubble = (cls, text) => { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; };
+const LINK_RE = /(https?:\/\/[^\s)]+|\(\d{3}\)\s?\d{3}-\d{4}|\b\d{3}-\d{3}-\d{4}\b)/g;
+const bubble = (cls, text) => {
+  const d = document.createElement('div'); d.className = 'msg ' + cls;
+  String(text).split(LINK_RE).forEach((part) => {
+    if (!part) return;
+    if (/^https?:\/\//.test(part)) {
+      const a = document.createElement('a'); a.href = part; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = part.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+      d.appendChild(a);
+    } else if (/^[\d(]/.test(part) && /\d{3}-\d{4}$/.test(part)) {
+      const a = document.createElement('a'); a.href = 'tel:+1' + part.replace(/\D/g, '');
+      a.textContent = part; d.appendChild(a);
+    } else d.appendChild(document.createTextNode(part));
+  });
+  log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
+};
 
 (async () => {
   if (!API) { bubble('them', '⚠️ No backend connected — open this link with ?api=<tunnel-url> from Discord.'); return; }
