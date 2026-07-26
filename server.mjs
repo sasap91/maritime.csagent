@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { execFile } from 'node:child_process';
+import { scrapeShopUrl } from './scrape.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 try { process.loadEnvFile(join(__dirname, '.env')); } catch { /* shell env */ }
@@ -104,6 +105,25 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && url.pathname === '/api/shops')
       return send(res, 200, Object.values(shops).map(({ slug, name, hours, at }) => ({ slug, name, hours, at })));
+
+    if (req.method === 'POST' && url.pathname === '/api/extract') {
+      const { url: shopUrl } = await readBody(req);
+      if (!shopUrl?.trim()) return send(res, 400, { error: 'url is required' });
+      let parsed;
+      try { parsed = new URL(shopUrl.trim()); } catch {
+        return send(res, 400, { error: 'Invalid URL' });
+      }
+      if (!/^https?:$/i.test(parsed.protocol))
+        return send(res, 400, { error: 'Only http/https URLs are supported.' });
+      try {
+        const result = await scrapeShopUrl(parsed.href);
+        console.log('[extract]', parsed.href, result);
+        return send(res, 200, result);
+      } catch (e) {
+        console.error('[extract] failed', parsed.href, e.message);
+        return send(res, 422, { error: e.message || 'Scrape failed' });
+      }
+    }
 
     if (req.method === 'POST' && url.pathname === '/api/shops') {
       const { name, hours, menu, policies, contact } = await readBody(req);
