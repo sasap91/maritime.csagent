@@ -4,37 +4,44 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Counter. Shops you can ask</title>
-<style>
-  :root { --bg:#faf6ef; --card:#fff; --ink:#26211a; --dim:#8a7f70; --hot:#c8401d; --line:#e8dfd2; }
-  * { box-sizing:border-box; margin:0; }
-  body { background:var(--bg); color:var(--ink); font:17px/1.5 -apple-system, "SF Pro Text", Georgia, serif; padding:34px; }
-  h1 { font-size:34px; } h1 span { color:var(--hot); }
-  .sub { color:var(--dim); margin:6px 0 24px; max-width:40em; }
-  .count { color:var(--hot); font-weight:700; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
-  .shop { background:var(--card); border:1px solid var(--line); border-radius:13px; padding:18px; }
-  .shop h2 { font-size:20px; margin-bottom:4px; }
-  .shop .hrs { color:var(--dim); font-size:14px; margin-bottom:12px; }
-  .shop a { display:inline-block; text-decoration:none; background:var(--hot); color:#fff; border-radius:8px; padding:8px 14px; font-size:14px; font-weight:600; }
-  footer { margin-top:30px; color:var(--dim); font-size:13.5px; max-width:40em; }
-  a { color:inherit; }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shops.css">
 </head>
 <body>
-<h1>Counter<span>.</span> shops</h1>
-<div class="sub">
-  <span class="count" id="n">0</span> counters open. Ask about the menu, hours, or delivery.
-  <a href="/">Add yours</a>
+<div class="page">
+  <div class="brand">
+    <h1>Counter<span>.</span> shops</h1>
+  </div>
+  <p class="sub">
+    <span class="count" id="n">0</span> counters open. Ask about the menu, hours, or delivery.
+    <a href="/">Add yours</a>
+  </p>
+  <div class="grid" id="grid"></div>
+  <footer>Pick a shop and ask like you would at the counter.</footer>
 </div>
-<div class="grid" id="grid"></div>
-<footer>Pick a shop and ask like you would at the counter.</footer>
 <script>
+let fingerprint = '';
 async function tick() {
   try {
     const shops = await (await fetch('/api/shops')).json();
     document.getElementById('n').textContent = shops.length;
-    document.getElementById('grid').innerHTML = shops.map(s =>
-      `<div class="shop"><h2>${s.name}</h2><div class="hrs">${s.hours}</div><a href="/s/${s.slug}">Ask this shop</a></div>`).join('');
+    const next = shops.map(s => s.slug + '|' + s.name + '|' + s.hours).join('\n');
+    if (next === fingerprint) return;
+    fingerprint = next;
+    const grid = document.getElementById('grid');
+    if (!shops.length) {
+      grid.innerHTML = '<p class="empty">No shops yet. <a href="/">Open the first counter</a>.</p>';
+      return;
+    }
+    grid.innerHTML = shops.map((s, i) =>
+      `<article class="shop" style="animation-delay:${0.08 + i * 0.07}s">
+        <h2>${s.name}</h2>
+        <div class="hrs">${s.hours}</div>
+        <a href="/s/${s.slug}">Ask this shop</a>
+      </article>`
+    ).join('');
   } catch {}
 }
 tick(); setInterval(tick, 5000);
