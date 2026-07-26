@@ -78,7 +78,13 @@ const readBody = (req) => new Promise((resolve) => {
   let d = ''; req.on('data', (c) => (d += c));
   req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { resolve({}); } });
 });
-const send = (res, code, obj) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
+// CORS: the static frontend lives on GitHub Pages and calls this API cross-origin.
+const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, POST, OPTIONS',
+  'access-control-allow-headers': 'content-type',
+};
+const send = (res, code, obj) => { res.writeHead(code, { 'content-type': 'application/json', ...CORS }); res.end(JSON.stringify(obj)); };
 const page = async (res, file, vars = {}) => {
   let html = await readFile(join(__dirname, 'public', file), 'utf8');
   for (const [k, v] of Object.entries(vars)) html = html.replaceAll(`{{${k}}}`, v);
@@ -88,6 +94,7 @@ const page = async (res, file, vars = {}) => {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://x');
+    if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
 
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html'))
       return page(res, 'onboard.html');
