@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counter — every shop gets its own agent</title>
+<style>
+  :root { --bg:#faf6ef; --card:#fff; --ink:#26211a; --dim:#8a7f70; --hot:#c8401d; --line:#e8dfd2; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--ink); font:17px/1.5 -apple-system, "SF Pro Text", Georgia, serif; padding:28px; max-width:900px; margin:0 auto; }
+  h1 { font-size:34px; } h1 span { color:var(--hot); }
+  .sub { color:var(--dim); margin:6px 0 22px; }
+  .count { color:var(--hot); font-weight:700; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:16px; }
+  .shop { background:var(--card); border:1px solid var(--line); border-radius:13px; padding:18px; }
+  .shop h2 { font-size:19px; margin-bottom:4px; }
+  .shop .hrs { color:var(--dim); font-size:13.5px; margin-bottom:12px; }
+  .shop a { display:inline-block; text-decoration:none; background:var(--hot); color:#fff; border-radius:8px; padding:8px 14px; font-size:14px; font-weight:600; }
+  .warn { background:#fff5ec; border:1px solid #f0cdb0; border-radius:10px; padding:14px 16px; font-size:14.5px; margin-bottom:20px; }
+  .warn code { background:#f6e9dd; padding:1px 5px; border-radius:4px; }
+  footer { margin-top:28px; color:var(--dim); font-size:13px; }
+</style>
+</head>
+<body>
+<h1>Counter<span>.</span></h1>
+<div class="sub">Every mom &amp; pop shop gets its own persistent Maritime agent. <span class="count" id="n">…</span> shops live. · Sundai × Maritime Hack 133</div>
+<div class="warn" id="warn" style="display:none">No backend connected. Open this page with <code>?api=&lt;tunnel-url&gt;</code> (Wilson posts it in Discord) — it's remembered after the first visit.</div>
+<div class="grid" id="grid"></div>
+<footer>frontend: GitHub Pages · backend: Counter API (Maritime per-shop agents) · repo: <a href="https://github.com/sasap91/maritime.csagent">maritime.csagent</a></footer>
+<script>
+const qs = new URLSearchParams(location.search);
+if (qs.get('api')) localStorage.setItem('counter_api', qs.get('api').replace(/\/$/, ''));
+const API = localStorage.getItem('counter_api') || '';
+async function tick() {
+  if (!API) { document.getElementById('warn').style.display = 'block'; document.getElementById('n').textContent = '?'; return; }
+  try {
+    const shops = await (await fetch(API + '/api/shops')).json();
+    document.getElementById('n').textContent = shops.length;
+    document.getElementById('grid').innerHTML = shops.map(s =>
+      `<div class="shop"><h2>${s.name}</h2><div class="hrs">${s.hours}</div><a href="s.html?shop=${s.slug}">Chat with the counter →</a></div>`).join('');
+  } catch { document.getElementById('warn').style.display = 'block'; }
+}
+tick(); setInterval(tick, 7000);
+</script>
+</body>
+</html>

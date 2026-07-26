@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counter — chat with the shop</title>
+<style>
+  :root { --bg:#faf6ef; --ink:#26211a; --dim:#8a7f70; --hot:#c8401d; --line:#e8dfd2; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--ink); font:16px/1.5 -apple-system, "SF Pro Text", Georgia, serif; height:100dvh; display:flex; flex-direction:column; }
+  header { padding:14px 18px; background:#fff; border-bottom:1px solid var(--line); }
+  header h1 { font-size:20px; } header h1 span { color:var(--hot); }
+  header .sub { font-size:13px; color:var(--dim); }
+  #log { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .msg { max-width:82%; padding:10px 14px; border-radius:16px; white-space:pre-wrap; }
+  .me { align-self:flex-end; background:var(--hot); color:#fff; border-bottom-right-radius:4px; }
+  .them { align-self:flex-start; background:#fff; border:1px solid var(--line); border-bottom-left-radius:4px; }
+  .typing { align-self:flex-start; color:var(--dim); font-size:14px; padding:4px 8px; }
+  form { display:flex; gap:10px; padding:12px 14px; background:#fff; border-top:1px solid var(--line); }
+  input { flex:1; border:1px solid var(--line); border-radius:999px; padding:12px 16px; font:inherit; background:#fdfbf7; }
+  input:focus { outline:none; border-color:var(--hot); }
+  button { background:var(--hot); color:#fff; border:0; border-radius:999px; padding:0 20px; font:600 15px inherit; cursor:pointer; }
+  .foot { text-align:center; font-size:11.5px; color:var(--dim); padding:6px 0 10px; background:#fff; }
+  .foot a { color:inherit; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="name">Counter<span>.</span></h1>
+  <div class="sub" id="hours">loading shop…</div>
+</header>
+<div id="log"></div>
+<form id="f">
+  <input id="q" placeholder="Do you have gluten-free crust?" autocomplete="off">
+  <button>Send</button>
+</form>
+<div class="foot">served by the shop's own Maritime agent · <a href="index.html">all shops</a></div>
+<script>
+const qs = new URLSearchParams(location.search);
+if (qs.get('api')) localStorage.setItem('counter_api', qs.get('api').replace(/\/$/, ''));
+const API = localStorage.getItem('counter_api') || '';
+const SLUG = qs.get('shop') || 'boston-kitchen-pizza';
+const log = document.getElementById('log');
+const history = [];
+const bubble = (cls, text) => { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; };
+
+(async () => {
+  if (!API) { bubble('them', '⚠️ No backend connected — open this link with ?api=<tunnel-url> from Discord.'); return; }
+  try {
+    const shops = await (await fetch(API + '/api/shops')).json();
+    const shop = shops.find(s => s.slug === SLUG);
+    if (!shop) { bubble('them', '⚠️ Shop "' + SLUG + '" not found on the backend.'); return; }
+    document.getElementById('name').innerHTML = shop.name + '<span>.</span>';
+    document.getElementById('hours').textContent = shop.hours + ' · usually replies in ~15s';
+    document.title = shop.name + ' — ask us anything';
+    bubble('them', "Hey! I'm the agent behind the counter at " + shop.name + '. Ask me about the menu, hours, delivery — anything.');
+  } catch { bubble('them', '⚠️ Backend unreachable — is the tunnel up?'); }
+})();
+
+document.getElementById('f').onsubmit = async (e) => {
+  e.preventDefault();
+  const q = document.getElementById('q');
+  const text = q.value.trim(); if (!text || !API) return;
+  q.value = '';
+  bubble('me', text);
+  history.push({ role: 'user', text });
+  const t = document.createElement('div'); t.className = 'typing'; t.textContent = 'typing…'; log.appendChild(t); log.scrollTop = log.scrollHeight;
+  try {
+    const r = await fetch(API + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ slug: SLUG, message: text, history: history.slice(0, -1) }) });
+    const d = await r.json();
+    t.remove();
+    if (!r.ok) throw new Error(d.error || 'failed');
+    bubble('them', d.reply);
+    history.push({ role: 'agent', text: d.reply });
+  } catch (ex) { t.remove(); bubble('them', '⚠️ ' + ex.message); }
+};
+</script>
+</body>
+</html>
