@@ -21,6 +21,12 @@ try {
 const PORT = process.env.PORT || 3300;
 const FRONTDOOR = process.env.MARITIME_FRONTDOOR_AGENT || "mm-frontdoor2";
 const ADMIN = process.env.ADMIN_SECRET || "sundai";
+// Voice channel (ElevenLabs Conversational AI widget). The agent is a thin voice
+// shell that calls POST /api/voice/answer as a webhook tool; the real brain is
+// still askShopAgent(). AGENT_ID is templated into the shop chat page for the
+// widget embed; TOOL_SECRET (optional) gates the webhook tool with a header.
+const ELEVENLABS_AGENT_ID = process.env.ELEVENLABS_AGENT_ID || "";
+const ELEVENLABS_TOOL_SECRET = process.env.ELEVENLABS_TOOL_SECRET || "";
 
 // ── Disk-backed shops registry ──────────────────────────────────────────────
 const DATA = join(__dirname, "data");
@@ -109,6 +115,25 @@ async function askShopAgent(shop, history, message) {
   return res.reply;
 }
 
+// ── Voice channel (ElevenLabs) ──────────────────────────────────────────────
+// The text brain pastes full ordering URLs + tel: links into replies — fine for
+// WhatsApp/web (tappable), awful spoken aloud. This converts a text reply into a
+// speakable one so the ElevenLabs agent reads something natural instead of a URL.
+const speakable = (reply) =>
+  reply
+    // "(617) 555-0100" / "+16175550100" → "at six one seven, five five five, zero one zero zero"
+    .replace(/(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, (m) => {
+      const digits = m.replace(/\D/g, "").replace(/^1/, "").split("").join(" ");
+      return digits;
+    })
+    // Bare http(s) URLs → "I'll send you the link"
+    .replace(/https?:\/\/\S+/g, "I'll send you the link")
+    // "tel:" links (already covered above if they contain a number, but be safe)
+    .replace(/tel:\+?\d+/g, (m) =>
+      m.replace(/\D/g, "").split("").join(" "),
+    )
+    .trim();
+
 // ── HTTP plumbing ───────────────────────────────────────────────────────────
 const readBody = (req) =>
   new Promise((resolve) => {
@@ -157,6 +182,7 @@ const server = http.createServer(async (req, res) => {
         SLUG: shop.slug,
         NAME: shop.name,
         HOURS: shop.hours,
+        AGENT_ID: ELEVENLABS_AGENT_ID,
       });
     }
 
@@ -251,8 +277,43 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { reply });
     }
 
-    if (req.method === "POST" && url.pathname === "/api/reset") {
-      const { secret } = await readBody(req);
+    // Voice channel — ElevenLabs Conversational AI calls this as a webhook tool
+    // ("ask_counter") on every turn. It is a thin wrapper over the SAME brain as
+    // /api/chat: one source of truth. Returns { result } which the ElevenLabs
+    // agent speaks aloud. slug is pinned in the tool URL (?slug=...) so the agent
+    // never has to invent it. Optional shared-secret header if ELEVENLABS_TOOL_SECRET
+    // is set.
+    if (req.method === "POST" && url.pathname === "/api/voice/answer") {
+      const slug = url.searchParams.get("slug") || "boston-kitchen-pizza";
+      const shop = shops[slug];
+      if (!shop)
+        return send(res, 404, { result: "Sorry, I can't find that shop." });
+      if (
+        ELEVENLABS_TOOL_SECRET &&
+        req.headers["x-tool-secret"] !== ELEVENLABS_TOOL_SECRET
+      )
+        return send(res, 401, { result: "Unauthorized." });
+      const body = await readBody(req);
+      // ElevenLabs posts { parameters: { message } }; also accept { message }
+      // so the route is testable with a plain curl.
+      const message = (body.parameters?.message || body.message || "")
+        .trim()
+        .slice(0, 1000);
+      if (!message)
+        return send(res, 400, { result: "I didn't catch that." });
+      try {
+        const reply = await askShopAgent(shop, null, message);
+        return send(res, 200, { result: speakable(reply) });
+      } catch (e) {
+        console.error("[voice] failed", slug, e.message);
+        return send(res, 200, {
+          result:
+            "Sorry, give us one sec — or call us at the shop number.",
+        });
+      }
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/reset") {      const { secret } = await readBody(req);
       if (secret !== ADMIN) return send(res, 403, { error: "bad secret" });
       shops = {};
       await persist();
