@@ -21,7 +21,14 @@ const ADMIN = process.env.ADMIN_SECRET || 'sundai';
 const DATA = join(__dirname, 'data');
 await mkdir(DATA, { recursive: true });
 const SHOPS_F = join(DATA, 'shops.json');
-let shops = existsSync(SHOPS_F) ? JSON.parse(readFileSync(SHOPS_F, 'utf8')) : {};
+const SEED_F = join(__dirname, 'seed-shops.json');
+// First boot on a fresh clone: load the committed seed (real onboarded shops)
+// so teammates get Boston Kitchen Pizza + Kendall House of Pizza out of the box.
+let shops = existsSync(SHOPS_F)
+  ? JSON.parse(readFileSync(SHOPS_F, 'utf8'))
+  : existsSync(SEED_F)
+    ? JSON.parse(readFileSync(SEED_F, 'utf8'))
+    : {};
 const persist = () => writeFile(SHOPS_F, JSON.stringify(shops, null, 2));
 
 const slugify = (s) =>
