@@ -13,7 +13,7 @@
     "name": "Boston Kitchen Pizza",
     "hours": "Mon-Wed 10:00 AM-8:30 PM; Thu 10:00 AM-9:30 PM; Fri 10:00 AM-2:30 AM; Sat 11:00 AM-2:30 AM; Sun 11:00 AM-7:30 PM.",
     "sources": {
-      "menu": "shop-data/boston-kitchen-pizza/menu.csv",
+      "menu": "shop-data/boston-kitchen-pizza/menu.md",
       "hours": "shop-data/boston-kitchen-pizza/hours.md"
     },
     "policies": "Dine-in, takeout, no-contact delivery. Order online via ChowNow/GrubHub/DoorDash/UberEats or call (617) 482-0085. Simple pizza joint - slices and pies plus pasta, calzones, panini. Open LATE Fri and Sat (until 2:30 AM). One block from Boston Common / Theater District. Never invent items or prices; if unsure say so and give the phone number. Catering available.",
