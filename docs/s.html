@@ -38,7 +38,7 @@
 <div class="foot">served by the shop's own Maritime agent · <a href="index.html">all shops</a></div>
 <script>
 const qs = new URLSearchParams(location.search);
-const DEFAULT_API = 'https://api.maritime.sh/a/afcabf07-130d-4133-8b92-1e43e82db3ee'; // Maritime-hosted backend — stable
+const DEFAULT_API = 'https://api.maritime.sh/a/69e578d9-7e05-4d65-bb11-91b39df74a9e'; // Maritime-hosted backend — stable
 localStorage.removeItem('counter_api'); // purge stale tunnel URLs from earlier today
 const API = (qs.get('api') || DEFAULT_API).replace(/\/$/, '');
 const SLUG = qs.get('shop') || 'boston-kitchen-pizza';
