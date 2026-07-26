@@ -30,7 +30,8 @@
 <script>
 const qs = new URLSearchParams(location.search);
 if (qs.get('api')) localStorage.setItem('counter_api', qs.get('api').replace(/\/$/, ''));
-const API = localStorage.getItem('counter_api') || '';
+const DEFAULT_API = 'https://enormous-massive-urban-namespace.trycloudflare.com'; // baked at deploy; re-pushed when the tunnel restarts
+const API = (qs.get('api') || localStorage.getItem('counter_api') || DEFAULT_API).replace(/\/$/, '');
 async function tick() {
   if (!API) { document.getElementById('warn').style.display = 'block'; document.getElementById('n').textContent = '?'; return; }
   try {
