@@ -83,7 +83,7 @@ document.getElementById('f').onsubmit = async (e) => {
   history.push({ role: 'user', text });
   const t = document.createElement('div'); t.className = 'typing'; t.textContent = 'typing…'; log.appendChild(t); log.scrollTop = log.scrollHeight;
   const ask = async () => {
-    const r = await fetch(API + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' },
+    const r = await fetch(API + '/api/chat', { method: 'POST', headers: { 'content-type': 'text/plain;charset=utf-8' } /* simple request — Maritime proxy 400s CORS preflights */,
       body: JSON.stringify({ slug: SLUG, message: text, history: history.slice(0, -1) }) });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'failed');
