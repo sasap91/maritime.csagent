@@ -61,12 +61,15 @@ owner ──► onboard form (/) ──► POST /api/shops ──► spawn + bri
 ```
 
 - One `maritime message --user shop_<slug>` call **is** the provisioning system: unknown shop id → new persistent agent. No provisioning code exists in this repo.
-- Front-door agent: an OpenClaw template agent on Maritime (persists memory across messages — validated; ZeroClaw does not persist, don't swap it in).
-- Maritime **source builds are down today** (503) — templates are unaffected, which is why the agents are template-spawned and this web app runs laptop+tunnel.
+- Front-door agent: an OpenClaw template agent on Maritime (persists memory across messages — validated; ZeroClaw does not persist, don't swap it in). **Grounding travels inline with every call** — front-door agents share one memory store across user ids (we caught Kendall quoting BKP's hours), so agent memory is used for the owner FAQ backlog, never for menu facts.
+- **The app + API are Maritime-hosted** (built from this repo's Dockerfile): https://api.maritime.sh/a/69e578d9-7e05-4d65-bb11-91b39df74a9e — onboarding at `/`, chat at `/s/<slug>`, directory at `/shops`. Static frontend mirror on GitHub Pages: https://wilsonwu-ai.github.io/counter-demo/
+- Platform notes from launch day (all logged + reported to the Maritime team): source builds were down in the morning (came back ~1pm); a registry bug destroys running containers on any redeploy, making agents effectively **immutable** — we ship a fresh agent per change behind the stable frontend; and the public proxy 400s CORS preflights, so all browser POSTs use preflight-free `text/plain`.
 
 ## Run it
 
-The Maritime credentials are on Wilson's account — **the server runs on Wilson's laptop; use the tunnel URL he posts in Discord to try it.** Clone + contribute code via git; don't ask for the mk_ key in chat.
+**Just use it — it's hosted:** web chat https://wilsonwu-ai.github.io/counter-demo/ · full app https://api.maritime.sh/a/69e578d9-7e05-4d65-bb11-91b39df74a9e
+
+Local dev (Maritime credentials are on Wilson's account — contribute via git, don't ask for the mk_ key in chat):
 
 ```bash
 npm install
@@ -74,8 +77,7 @@ npm install
 npm start                  # http://localhost:3300 — seeds both real shops on first boot
 ```
 
-- Onboard a shop: `/` · Chat: `/s/boston-kitchen-pizza` · Directory: `/shops`
-- Public URL: `cloudflared tunnel --url http://localhost:3300`
+Deploys: push to main, then create a fresh Maritime agent from the repo (`maritime create <name> --repo <this repo> --public --port 8080`) — remember, redeploys of an existing agent are destroyed by the registry bug; always create fresh, then re-point the frontend's baked API URL.
 
 ## WhatsApp integration (the actual MVP — owners: Sasa & Wilson)
 
@@ -83,7 +85,7 @@ Validated so far: `hermes whatsapp` pairs a real WhatsApp number via QR code (no
 
 **WIRED AND VERIFIED (2:15pm):** WhatsApp number paired via `hermes whatsapp` QR (separate bot number, allowed users `*` — anyone can text it). Routing is agent-relay: a scoped mode appended to Hermes's `~/.hermes/SOUL.md` makes the gateway agent relay every customer message verbatim to `POST /api/chat {slug: boston-kitchen-pizza}` and reply with exactly the returned text (fail-safe: "call (617) 482-0085" if the API is down). Verified headless end-to-end — the large-Hawaiian trap answer came back word-for-word through the full chain (Hermes → Counter → Maritime agent).
 
-Ops notes: gateway + Counter + tunnel all run on Wilson's laptop (`hermes gateway run` must stay in a foreground terminal). WhatsApp replies take ~20–40s (two model hops). One gateway = one shop for the demo; multi-shop routing (route by keyword or per-shop numbers) is stretch. Replies carry a "⚕ Hermes Agent" prefix.
+Ops notes: **only the gateway is local** — it runs as a launchd background service on Wilson's laptop (the QR-paired WhatsApp session physically lives there; `hermes gateway restart` to bounce it). The relay targets the Maritime-hosted API and retries once before its fail-safe. Bridge runs in self-chat mode (only Wilson's own messages trigger it — strangers texting the number are untouched). Replies take ~20–40s (two model hops) and carry a minimal `🍕 ` prefix (load-bearing: the bridge recognizes its own replies by it). Roadmap: host the gateway on Maritime too — Hermes is a first-class Maritime template, so each shop can get its own hosted Hermes + WhatsApp number.
 
 ## Demo plan (8pm) — see PRD §6
 
