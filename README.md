@@ -12,6 +12,24 @@ Live PRD: [Google Doc](https://docs.google.com/document/d/1mv9iSciGaHw2XbTbfcQx8
 | David & Kelvin | Agent quality | Briefing/grounding, unknown-question memory, tone, database |
 | Allan & Rohan | Frontend / onboarding | Onboard form + directory polish, QR codes for tables |
 
+## 🍕 ELI5 — what did we actually build?
+
+You know how when you call a pizza shop, the line is busy, and the person answering the phone is also the person making the pizzas?
+
+**We gave the shop a helper who never puts you on hold.**
+
+- You **text the shop on WhatsApp** (or open a small chat page) like you'd text a friend: *"how much is a large pepperoni?"*
+- **The shop's own agent answers in seconds** — and it *really* knows the shop: the actual menu, actual prices, actual hours. It never makes things up. Ask Boston Kitchen Pizza for a **large Hawaiian** and it politely tells you that size doesn't exist — and offers the medium ($19.95) or XL ($32) that do.
+- Want to order? It asks **"pickup or delivery?"** and texts you the right link to tap — and it recommends pickup first, like a good employee would, because direct orders keep more money with the shop than the delivery apps do.
+- Stumped? It **writes the question down for the owner** — so the shop learns what customers keep asking.
+
+The part that makes this a *platform* and not a chatbot: **every shop gets its OWN agent** — a separate, persistent brain per shop, hosted on [Maritime](https://maritime.sh). Adding shop #3 is one form (or just paste a menu link and it fills itself in). We onboarded **two real Boston pizza shops** today from their public menus, and you can talk to both right now.
+
+▶️ **Watch:** [20-second demo](demo/counter-demo-20s.mp4) · [Boston Kitchen Pizza demo](demo/boston-kitchen-pizza-demo_v2.mp4)
+💬 **Try it:** [web chat](https://wilsonwu-ai.github.io/counter-demo/) — pick a shop, ask anything
+
+**How a message travels (the slightly-bigger-kid version):** your WhatsApp text → the **Hermes gateway** (the shop's phone line) → the **Counter API** hosted on Maritime (the switchboard) → the **shop's dedicated Maritime agent** (the brain, with the menu in its head) → back to your phone with the answer. Four hops, ~10–30 seconds, no human needed — and the shop owner never touched a line of code.
+
 ## ⚠️ The web chat is a PROTOTYPE. The product is WhatsApp.
 
 What's in this repo today is the working spine: onboarding → per-shop Maritime agent → grounded Q&A, demoed through a throwaway web chat UI. The MVP we present replaces that UI with **WhatsApp via the Hermes gateway** (see PRD §4). The plumbing to keep: `POST /api/chat {slug, message}` → shop's agent → reply. The WhatsApp integration calls that same endpoint (or the front door directly).
