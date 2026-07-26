@@ -1,0 +1,4 @@
+interface:
+  display_name: "Answer Menu & Hours"
+  short_description: "Answer grounded shop menu and hours questions"
+  default_prompt: "Use $answer-menu-hours to answer a customer question about a shop menu or opening hours."

@@ -28,6 +28,8 @@ Grounding rule learned the hard way: an **unbriefed** agent invented an $18.99 p
 Committed source material for seeded shops lives under `shop-data/<shop-slug>/`.
 A seed can set `sources.menu` and `sources.hours` to repository-relative files;
 the server loads those files as the agent's grounding information at startup.
+New or maintained Markdown sources should follow the versioned contract in
+`.agents/skills/answer-menu-hours/references/shop-source-schema.md`.
 
 ## Architecture
 

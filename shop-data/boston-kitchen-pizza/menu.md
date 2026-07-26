@@ -1,4 +1,11 @@
-﻿# Boston Kitchen Pizza Menu
+---
+schema: counter-shop-menu-v1
+shop: boston-kitchen-pizza
+document: menu
+currency: USD
+---
+
+# Boston Kitchen Pizza Menu
 
 _Prices and availability are subject to change. Item IDs and source image links are retained from the source menu._
 
