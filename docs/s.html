@@ -38,7 +38,7 @@
 <script>
 const qs = new URLSearchParams(location.search);
 if (qs.get('api')) localStorage.setItem('counter_api', qs.get('api').replace(/\/$/, ''));
-const DEFAULT_API = 'https://enormous-massive-urban-namespace.trycloudflare.com'; // baked at deploy; re-pushed when the tunnel restarts
+const DEFAULT_API = 'https://api.maritime.sh/a/3ad1d0df-3a98-40fe-b21b-9ea0990dbc67'; // Maritime-hosted backend — stable
 const API = (qs.get('api') || localStorage.getItem('counter_api') || DEFAULT_API).replace(/\/$/, '');
 const SLUG = qs.get('shop') || 'boston-kitchen-pizza';
 const log = document.getElementById('log');
