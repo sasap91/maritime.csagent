@@ -7,7 +7,7 @@ import http from 'node:http';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -22,12 +22,35 @@ const DATA = join(__dirname, 'data');
 await mkdir(DATA, { recursive: true });
 const SHOPS_F = join(DATA, 'shops.json');
 const SEED_F = join(__dirname, 'seed-shops.json');
+
+function readShopSource(sourcePath, label, slug) {
+  if (!sourcePath || typeof sourcePath !== 'string') return null;
+  const absolutePath = resolve(__dirname, sourcePath);
+  const relativePath = relative(__dirname, absolutePath);
+  if (isAbsolute(relativePath) || relativePath.startsWith('..')) {
+    throw new Error(`Invalid ${label} source for ${slug}: path must stay inside the repository`);
+  }
+  return readFileSync(absolutePath, 'utf8').trim();
+}
+
+function loadShops(file) {
+  const registry = JSON.parse(readFileSync(file, 'utf8'));
+  return Object.fromEntries(Object.entries(registry).map(([slug, shop]) => {
+    const menu = readShopSource(shop.sources?.menu, 'menu', slug) || shop.menu;
+    const hoursDetails = readShopSource(shop.sources?.hours, 'hours', slug) || shop.hours;
+    if (!menu || !hoursDetails) {
+      throw new Error(`Shop ${slug} must provide menu and hours information`);
+    }
+    return [slug, { ...shop, menu, hoursDetails }];
+  }));
+}
+
 // First boot on a fresh clone: load the committed seed (real onboarded shops)
 // so teammates get Boston Kitchen Pizza + Kendall House of Pizza out of the box.
 let shops = existsSync(SHOPS_F)
-  ? JSON.parse(readFileSync(SHOPS_F, 'utf8'))
+  ? loadShops(SHOPS_F)
   : existsSync(SEED_F)
-    ? JSON.parse(readFileSync(SEED_F, 'utf8'))
+    ? loadShops(SEED_F)
     : {};
 const persist = () => writeFile(SHOPS_F, JSON.stringify(shops, null, 2));
 
@@ -50,7 +73,7 @@ const shopUserId = (slug) => 'shop_' + slug;
 function briefing(shop) {
   return `You are the customer service agent working the counter at "${shop.name}". Store everything below in your permanent memory — you will serve this shop's customers from now on.
 
-HOURS: ${shop.hours}
+HOURS: ${shop.hoursDetails || shop.hours}
 ADDRESS/PHONE: ${shop.contact}
 MENU:
 ${shop.menu}
