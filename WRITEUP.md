@@ -4,7 +4,7 @@
 **Counter**
 
 ## One-liner (card text)
-Text a real Boston pizza shop on WhatsApp — its own hosted agent answers with exact prices, real hours, and tap-to-order links.
+Text a real Boston pizza shop on WhatsApp — its own hosted agent answers with exact prices, real hours, and tap-to-order links. 🏆 Voted best project of Hack 133.
 
 ## Tags
 `agents` · `LLM` · `WhatsApp` · `Maritime` · `customer service` · `small business` · `a2a`

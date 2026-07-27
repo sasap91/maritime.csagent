@@ -1,5 +1,7 @@
 # Counter — Maritime Customer Service Agents (Hack 133)
 
+> 🏆 **Voted best project at Sundai × Maritime (Hack 133), MIT — July 26, 2026.**
+
 **Every mom & pop shop gets its own agent behind the counter.** Onboard a shop once (name, hours, menu, policies) → a dedicated persistent [Maritime](https://maritime.sh) agent is spawned for it → customers ask it anything and get grounded answers with exact prices.
 
 > ### 🎤 Try it right now
